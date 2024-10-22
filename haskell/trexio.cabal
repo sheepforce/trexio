@@ -49,6 +49,7 @@ library
     other-modules:
         TREXIO.Internal.Bindings,
         TREXIO.Internal.Marshaller
+        TREXIO.Internal.TH
     hs-source-dirs:   src
     default-language: GHC2021
     build-depends:

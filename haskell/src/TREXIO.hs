@@ -17,7 +17,7 @@ import Language.Haskell.TH
 import System.OsPath
 import TREXIO.CooArray
 import TREXIO.Internal.Marshaller
-import TREXIO.Internal.Bindings
+import TREXIO.Internal.TH
 
---nucleusQ
+nucleusQ
 
