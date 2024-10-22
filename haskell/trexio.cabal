@@ -44,10 +44,15 @@ library
         extensions,
         warnings
     exposed-modules:
-        TREXIO
-    -- other-modules:
+        TREXIO,
+        TREXIO.CooArray
+    other-modules:
+        TREXIO.Internal.Bindings,
+        TREXIO.Internal.Marshaller
     hs-source-dirs:   src
     default-language: GHC2021
+    build-depends:
+        template-haskell >= 2.20 && < 2.23
     build-tool-depends:
         c2hs:c2hs
     extra-libraries:

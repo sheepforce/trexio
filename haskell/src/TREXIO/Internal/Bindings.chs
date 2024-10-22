@@ -1,18 +1,24 @@
+{-# LANGUAGE TemplateHaskell, QuasiQuotes #-}
+
 #include <trexio.h>
 {# context prefix = "trexio" #}
 
-module TREXIO where
+module TREXIO.Internal.Bindings where
 
 import Control.Exception
+import Control.Monad
 import Data.Int
-import Data.Massiv.Array as Massiv
+import Data.Massiv.Array as Massiv hiding (forM)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
+import Language.Haskell.TH
 import System.OsPath
+import TREXIO.CooArray
+import TREXIO.Internal.Marshaller
 
 {# typedef int32_t Int32 #}
 {# default in `Int32' [int32_t] fromIntegral #}
@@ -178,18 +184,6 @@ instance Enum ExitCode where
 
 instance Exception ExitCode where
   displayException = stringOfError 
-
-{-
-instance Storable ExitCode where
-  sizeOf _ = sizeOf (undefined :: Int32)
-  alignment _ = alignment (undefined :: Int32)
-  peek ptr = do
-    val :: Int32 <- peek . castPtr $ ptr
-    return . toEnum . fromIntegral $ val
-  poke ptr c = 
-    let c32 :: Int32 = fromIntegral . fromEnum $ c
-     in poke (castPtr ptr) c32
--}
 
 -- | Convert an 'ExitCode' to a string
 {# fun pure string_of_error as ^
@@ -413,6 +407,51 @@ open fp mode be = do
 #}
 
 --------------------------------------------------------------------------------
+-- Template Haskell binding generator
+
+-- | The standard operations on data groups.
+ops :: [String]
+ops = [ "read", "write", "has" ]
+
+-- | Make a reader function for scalars
+mkReadInt :: Text -> Text -> Q [Dec]
+mkReadInt groupName dataName = do
+  -- Import the C function raw
+  cFnNameT <- newName . T.unpack $ cFnName
+  cSig <- [t| TrexioT -> Ptr Int32 -> IO CInt |]
+  let cFn = ForeignD $ ImportF CApi Safe capiStr cFnNameT cSig
+
+  reportWarning "@@@@@@@@@@@@@@@@@ Created C function"
+
+  {-
+  -- Make a Haskell wrapper around the C function
+  hsSig <- [t| TrexioT -> IO CInt |]
+  hsFnNameT <- newName . T.unpack $ hsFnName
+  hsFnBody <- [e| \trexio -> alloca $ \resPtr -> do
+      ec <- cFn trexio resPtr
+      peek resPtr
+    |]
+  let hsFn = FunD hsFnNameT [Clause [] (NormalB hsFnBody) []]
+  -}
+
+
+  return [cFn]
+  where
+    cFnName = "trexio_read_" <> groupName <> "_" <> dataName
+    hsFnName = "read" <> T.toTitle groupName <> T.toTitle dataName
+    capiStr = "trexio.h trexio_read_" <> T.unpack groupName <> "_" <> T.unpack dataName
+
+
+
+--------------------------------------------------------------------------------
+
+nucleusQ :: Q [Dec] 
+nucleusQ = do
+  fnT <- [t| CInt |]
+  mkReadInt "nucleus" "num"
+  where
+    groupName = "nucleus"
+    dataNames = []
 
 data Nucleus = Nucleus
   { num :: Sz1                -- ^ Number of nuclei
@@ -574,12 +613,39 @@ data Ao1eInt = Ao1eInt
 
 --------------------------------------------------------------------------------
 
-data ArraySparse ix = ArraySparse 
-  { size :: SzN ix
-  , 
-
-  }
-
 data Ao2eInt = Ao2eInt
-  { eri :: Int
+  { eri :: CooArray S Ix4 Double           -- ^ Electron repulsion integrals, square N(AO)⁴
+  , eriLR :: CooArray S Ix4 Double         -- ^ Long range ERIs
+  , eriCholeskyNum :: Sz1                  -- ^ Number of Cholesky vectors
+  , eriCholesky :: CooArray S Ix3 Double   -- ^ Cholesky decomposition of the ERIs, eriCholeskyNum x N(AO)²
+  , eriLRCholeskyNum :: Sz1                -- ^ Number of Cholesky vectors for long range ERIs
+  , eriLRCholesky :: CooArray S Ix3 Double -- ^ Cholesky decomposition of the long range ERIs, eriLRCholeskyNum x N(AO)²
+  } deriving (Generic)
+
+--------------------------------------------------------------------------------
+
+data MoClass
+  = Core
+  | Inactive
+  | Active
+  | Virtual
+  | Deleted
+  deriving (Eq, Show, Generic)
+
+data Spin
+  = Alpha
+  | Beta
+  deriving (Eq, Show, Generic)
+
+data MO = MO
+  { moType :: Text                   -- ^ Type of MO, e.g. "HF", "Natural", "CASSCF", ...
+  , num :: Sz1                       -- ^ Number of MOs
+  , coefficient :: Matrix S Double   -- ^ MO coefficients, N(MO) x N(AO)
+  , coefficientIm :: Matrix S Double -- ^ MO coefficients (imaginary part), N(MO) x N(AO)
+  , moClass :: MoClass               -- ^ The type of MOs saved here
+  , symmetry :: Text                 -- ^ Point group symmetry of the MOs
+  , occupation :: Vector S Double    -- ^ Occupation numbers of the MOs
+  , energy :: Vector S Double        -- ^ Energy of the MOs
+  , spin :: Spin                     -- ^ Spin of the MOs
+  , kPoint :: Vector S Double        -- ^ k-point coordinates
   }
