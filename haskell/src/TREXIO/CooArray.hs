@@ -9,12 +9,18 @@ where
 
 import Data.Foldable
 import Data.Massiv.Array as Massiv hiding (toList)
+import GHC.Generics
 
 -- | A coordinate list array representation.
 data CooArray r ix a = CooArray
   { values :: Vector r a
   , coords :: Vector r ix
   }
+  deriving (Generic)
+
+instance (Eq a) => Eq (CooArray r ix a)
+instance (Ord a) => Ord (CooArray r ix a)
+instance (Show a) => Show (CooArray r ix a)
 
 -- | Make a 'CooArray' from a list of coordinate-value pairs.
 mkCooArrayF ::

@@ -5,7 +5,6 @@ final: prev: {
     packageOverrides = hfinal: hprev: {
       trexio = hfinal.callCabal2nix "trexio" ../haskell {
         inherit (final) trexio;
-        filepath = hfinal.filepath_1_5_3_0;
       };
     };
   };

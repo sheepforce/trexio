@@ -42,3 +42,4 @@ trex.json
 .*.swp
 /build*
 haskell/dist-newstyle/
+haskell/.direnv

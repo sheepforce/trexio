@@ -1,11 +1,13 @@
-{-# LANGUAGE TemplateHaskell, QuasiQuotes #-}
-
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module TREXIO where
 
 import Control.Exception
 import Control.Monad
+import Data.Aeson
 import Data.Int
+import Data.Map qualified as Map
 import Data.Massiv.Array as Massiv hiding (forM)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -19,5 +21,8 @@ import TREXIO.CooArray
 import TREXIO.Internal.Marshaller
 import TREXIO.Internal.TH
 
-nucleusQ
-
+$( do
+    Just (TrexioScheme trexioScheme) <- runIO $ decodeFileStrict @TrexioScheme "./data/specification.json"
+    let groups = Map.toList trexioScheme
+    traverse (uncurry mkRecord) groups
+ )

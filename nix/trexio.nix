@@ -16,14 +16,14 @@ stdenv.mkDerivation rec {
   src = lib.cleanSourceWith {
     src = ../.;
     filter = path: type: ! (builtins.elem path [
-      "nix"
-      "haskell"
-      "docker"
-      "helpers-debian"
-      "ocaml"
-      "rust"
-      "flake.nix"
-      "flake.lock"
+      "./nix"
+      "./haskell"
+      "./docker"
+      "./helpers-debian"
+      "./ocaml"
+      "./rust"
+      "./flake.nix"
+      "./flake.lock"
     ]);
   };
 
