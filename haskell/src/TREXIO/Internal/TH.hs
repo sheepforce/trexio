@@ -35,7 +35,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Language.Haskell.TH
 import Language.Haskell.TH (DerivClause)
-import Debug.Trace (traceM)
+import Debug.Trace
 
 tshow :: (Show a) => a -> Text
 tshow = T.pack . show
@@ -166,7 +166,7 @@ it starts with a valid lower case letter or symbol.
 sanId :: String -> String
 sanId ind@(c : cs)
   | isUpperCase c = sanId $ toLower c : cs
-  | not $ isAlpha c =  sanId $ '_' : c : cs
+  | isDigit c = sanId $ '_' : c : cs
   | ind == "type" = "type'"
   | ind == "class" = "class'"
   | otherwise = c : cs
@@ -174,7 +174,7 @@ sanId ind@(c : cs)
 -- | Convert a field to a type
 fieldToType :: (Quote m) => DataName -> Typ -> m VarBangType
 fieldToType (DataName dataName) typ = do
-  let fieldName = mkName . camel . sanId . T.unpack $ dataName
+  let fieldName = mkName . sanId . camel . T.unpack $ dataName
   fieldType <- typToType typ
   return (fieldName, Bang NoSourceUnpackedness SourceStrict, fieldType)
 
