@@ -22,7 +22,7 @@ import TREXIO.Internal.Marshaller
 import TREXIO.Internal.TH
 
 $( do
-    Just (TrexioScheme trexioScheme) <- runIO $ decodeFileStrict @TrexioScheme "./data/specification.json"
+    Just (TrexioScheme trexioScheme) <- runIO $ decodeFileStrict @TrexioScheme "./data/simple.json"
     let groups = Map.toList trexioScheme
     traverse (uncurry mkRecord) groups
  )
