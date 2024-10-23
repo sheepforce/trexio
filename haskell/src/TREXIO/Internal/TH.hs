@@ -166,7 +166,7 @@ it starts with a valid lower case letter or symbol.
 sanId :: String -> String
 sanId ind@(c : cs)
   | isUpperCase c = sanId $ toLower c : cs
-  | not $ isAlpha c = "_" <> sanId (c : cs)
+  | not $ isAlpha c =  sanId $ '_' : c : cs
   | ind == "type" = "type'"
   | ind == "class" = "class'"
   | otherwise = c : cs
